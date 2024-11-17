@@ -20,6 +20,7 @@ class BaseExercise:
         self.video_path = video_path
         self.cap = cv2.VideoCapture(video_path)
         self.pose = mp.solutions.pose.Pose(min_detection_confidence=min_detecting_confidentce, min_tracking_confidence=min_tracking_confidence)
+        self.visibility_threshold = 0.5
         
         self.state = "up"
         self.last_state = "up"
@@ -85,21 +86,7 @@ class BaseExercise:
             stream.stop()
             cv2.destroyAllWindows()      
                 
-    
-    def get_direction(self, landmarks):
-        mp_pose = mp.solutions.pose
-        
-        nose = [landmarks[mp_pose.PoseLandmark.NOSE].x, landmarks[mp_pose.PoseLandmark.NOSE].y]
-        
-        if nose[0] > 0.5:
-            self.body_direction = "Right"
-        elif nose[0] < 0.5: 
-            self.body_direction = "Left"
-        else:
-            print("Error: Unable to determine body direction.")
-            os.exit(1)      
-            
-            
+              
     def draw_landmarks(self, image, pose_landmarks):
         mp_drawing = mp.solutions.drawing_utils
         mp_drawing.draw_landmarks(
@@ -107,6 +94,13 @@ class BaseExercise:
             mp_drawing.DrawingSpec(color=(245, 117, 66), thickness=2, circle_radius=2), 
             mp_drawing.DrawingSpec(color=(245, 66, 230), thickness=2, circle_radius=2)
             )
+        
+    
+    def filter_landmarks_by_visibility(self, pose_landmarks):
+        return [
+            landmark for landmark in pose_landmarks.landmark
+            if landmark.visibility >= self.visibility_threshold
+        ]
             
             
 class Squat(BaseExercise):
@@ -134,37 +128,40 @@ class Squat(BaseExercise):
         frame_height, frame_width, _ = image.shape
         
         if result.pose_landmarks:
-            landmarks = result.pose_landmarks.landmark
+            visible_landmarks = self.filter_landmarks_by_visibility(result.pose_landmarks)
+            
+            if len(visible_landmarks) > 0:
+                landmarks = result.pose_landmarks.landmark
 
-            self.get_direction(landmarks)
-            
-            hip_angle, knee_angle, l_knee_foot, r_knee_foot = self.get_calculated_angles(landmarks)
-            self.update_squat_state(knee_angle)
-                            
-            if self.state == "mid":
-                has_issues, feedback = self.check_squat(hip_angle, knee_angle, l_knee_foot, r_knee_foot)
-                if has_issues:
-                    self.set_feedback = True
-                    self.feedback_timestamp = time.time()                   
-                    
-            if self.rep_completed and self.last_state == "mid":
-                self.rep_count += 1
-                self.rep_completed = False
-                self.rep_errors.clear()
+                self.get_body_direction(landmarks)
                 
-            self.last_state = self.state
+                hip_angle, knee_angle, l_knee_foot, r_knee_foot = self.get_calculated_angles(landmarks)
+                self.update_squat_state(knee_angle)
+                                
+                if self.state == "mid":
+                    has_issues, feedback = self.check_squat(hip_angle, knee_angle, l_knee_foot, r_knee_foot)
+                    if has_issues:
+                        self.set_feedback = True
+                        self.feedback_timestamp = time.time()                   
+                        
+                if self.rep_completed and self.last_state == "mid":
+                    self.rep_count += 1
+                    self.rep_completed = False
+                    self.rep_errors.clear()
+                    
+                self.last_state = self.state
+                
+                self.display_angles(image, frame_width, frame_height, hip_angle, knee_angle, landmarks)
             
-            self.display_angles(image, frame_width, frame_height, hip_angle, knee_angle, landmarks)
-        
-        self.draw_landmarks(image, result.pose_landmarks)       
-        display_counter(image, self.rep_count, "Squat")
-        
-        if self.set_feedback and (time.time() - self.feedback_timestamp < self.feedback_duration):
-            display_feedback(image, self.rep_errors)
-        else:
-            self.set_feedback = False
-        
-        return image
+            self.draw_landmarks(image, result.pose_landmarks)       
+            display_counter(image, self.rep_count, "Squat")
+            
+            if self.set_feedback and (time.time() - self.feedback_timestamp < self.feedback_duration):
+                display_feedback(image, self.rep_errors)
+            else:
+                self.set_feedback = False
+            
+            return image
     
     
     def get_calculated_angles(self, landmarks):
@@ -274,6 +271,18 @@ class Squat(BaseExercise):
             cv2.putText(image, str(int(knee_angle)), right_knee_coordinates, cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2, cv2.LINE_AA)
            
 
+    def get_body_direction(self, landmarks):
+        left_knee_z = landmarks[mp.solutions.pose.PoseLandmark.LEFT_KNEE].z
+        right_knee_z = landmarks[mp.solutions.pose.PoseLandmark.RIGHT_KNEE].z
+        
+        if left_knee_z < right_knee_z:
+            self.body_direction = "Left"
+        elif left_knee_z > right_knee_z:
+            self.body_direction = "Right"
+        else:
+            raise ValueError("Error: Unable to determine body direction.")
+        
+        
 class Pushup(BaseExercise):
     STATE_THRESH = {
         "up": 150,
@@ -298,35 +307,40 @@ class Pushup(BaseExercise):
         frame_height, frame_width, _ = image.shape
         
         if result.pose_landmarks:
-            landmarks = result.pose_landmarks.landmark
-
-            elbow_angle, hip_angle = self.get_calculated_angles(landmarks)
-            self.update_pushup_state(elbow_angle)
-                            
-            if self.state == "mid":
-                has_issues = self.check_pushup_form(elbow_angle, hip_angle)
-                if has_issues:
-                    self.set_feedback = True
-                    self.feedback_timestamp = time.time()                   
-                    
-            if self.rep_completed and self.last_state == "mid":
-                self.rep_count += 1
-                self.rep_completed = False
-                self.rep_errors.clear()
-                
-            self.last_state = self.state
+            visible_landmarks = self.filter_landmarks_by_visibility(result.pose_landmarks)
             
-            self.display_angles(image, frame_width, frame_height, hip_angle, elbow_angle, landmarks)
-        
-        self.draw_landmarks(image, result.pose_landmarks)       
-        display_counter(image, self.rep_count, "Pushup")
-        
-        if self.set_feedback and (time.time() - self.feedback_timestamp < self.feedback_duration):
-            display_feedback(image, self.rep_errors)
-        else:
-            self.set_feedback = False
-        
-        return image 
+            if len(visible_landmarks) > 0:
+                landmarks = result.pose_landmarks.landmark
+                
+                self.get_body_direction(landmarks)
+
+                elbow_angle, hip_angle = self.get_calculated_angles(landmarks)
+                self.update_pushup_state(elbow_angle)
+                                
+                if self.state == "mid":
+                    has_issues = self.check_pushup_form(elbow_angle, hip_angle)
+                    if has_issues:
+                        self.set_feedback = True
+                        self.feedback_timestamp = time.time()                   
+                        
+                if self.rep_completed and self.last_state == "mid":
+                    self.rep_count += 1
+                    self.rep_completed = False
+                    self.rep_errors.clear()
+                    
+                self.last_state = self.state
+                
+                self.display_angles(image, frame_width, frame_height, hip_angle, elbow_angle, landmarks)
+            
+            self.draw_landmarks(image, result.pose_landmarks)       
+            display_counter(image, self.rep_count, "Pushup")
+            
+            if self.set_feedback and (time.time() - self.feedback_timestamp < self.feedback_duration):
+                display_feedback(image, self.rep_errors)
+            else:
+                self.set_feedback = False
+            
+            return image 
     
     def check_pushup_form(self, elbow_angle, hip_angle):
         has_issues = False
@@ -416,3 +430,13 @@ class Pushup(BaseExercise):
         cv2.putText(image, str(int(elbow_angle)), left_elbow_coordinates, cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2, cv2.LINE_AA)
     
     
+    def get_body_direction(self, landmarks):
+        left_shoulder_z = landmarks[mp.solutions.pose.PoseLandmark.LEFT_SHOULDER].z
+        right_shoulder_z = landmarks[mp.solutions.pose.PoseLandmark.RIGHT_SHOULDER].z
+        
+        if left_shoulder_z < right_shoulder_z:
+            self.body_direction = "Left"
+        elif left_shoulder_z > right_shoulder_z:
+            self.body_direction = "Right"
+        else:
+            raise ValueError("Error: Unable to determine body direction.")
