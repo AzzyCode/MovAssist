@@ -3,7 +3,11 @@ import matplotlib as mp
 import math
 import cv2
 
-def calculate_angle(a, b, c):
+from typing import Tuple, List, Optional, Union
+
+def calculate_angle(a: np.ndarray, b: np.ndarray, c: np.ndarray) -> float:
+    """Calculate the angle between three points."""
+    
     a = np.array(a) # First point
     b = np.array(b) # Mid point
     c = np.array(c) # End point
@@ -24,27 +28,34 @@ def angle_of_singleline(a, b):
     return math.degrees(math.atan2(y_difference, x_difference))
 
 
-def rescale_frame(frame, percent=50, max_height=None):
-    width = int(frame.shape[1] * percent/ 100)
-    height = int(frame.shape[0] * percent/ 100)
+def rescale_frame(frame, scale=None, target_dim=None):
+    """Rescale a frame either by a scale factor or to target dimension."""
+    if frame is None:
+        return None
     
-    if max_height and height > max_height:
-        scale_factor = max_height / frame.shape[0]
-        width = int(frame.shape[1] * scale_factor)
-        height = max_height
+    try:
+        if scale is not None:
+            if scale <= 0:
+                raise ValueError("Scale must be positive.")
+            width = int(frame.shape[1] * scale)
+            height = int(frame.shape[0] * scale)
+            new_dim = (width, height)
+        elif target_dim is not None:
+            if any(dim <= 0 for dim in target_dim):
+                raise ValueError("Target dimensions must be positive.")
+            new_dim = target_dim
+        else:
+            return frame
+        
+        return cv2.resize(frame, new_dim, interpolation=cv2.INTER_AREA)
     
-    dim = (width, height)
-    return cv2.resize(frame, dim, interpolation=cv2.INTER_AREA)
-
-
-def resize_frame(frame):
-    height, width = frame.shape[:2]
-    scale = 1280 / width
-    resized_frame = cv2.resize(frame, (1280, int(height * scale)))
-    return resized_frame
-
-
-def display_counter(frame, rep_counter, exercise):
+    except Exception as e:
+        print(f"Error in rescale_frame: {str(e)}")
+        return None
+    
+             
+def display_counter(frame, rep_counter, exercise) -> None:
+    """Display exercise counter on frame"""
     text = f"{exercise} reps: {rep_counter}"
     font = cv2.FONT_HERSHEY_SIMPLEX
     font_scale =1
@@ -61,37 +72,40 @@ def display_counter(frame, rep_counter, exercise):
     
 
 def display_feedback(image, issues):
-        font = cv2.FONT_HERSHEY_SIMPLEX
-        font_scale = 0.6
-        font_thickness = 2
-        text_color = (255, 255, 255)
-        shadow_color = (50, 50, 50)   
-        bg_color = (0, 0, 255, 150)
-        alpha = 0.8         
-        line_spacing = 15
-        padding = 10
-        corner_radius = 5
-                      
-        x = 20                          
-        y = 40                         
+    """Display feedback messages on frame"""
+    if not issues:
+        return
+    
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    font_scale = 0.6
+    font_thickness = 2
+    text_color = (255, 255, 255)
+    shadow_color = (50, 50, 50)   
+    bg_color = (0, 0, 255, 150)
+    alpha = 0.8         
+    line_spacing = 15
+    padding = 10
+                    
+    x = 20                          
+    y = 40                         
+    
+    overlay = image.copy()
+    
+    for issue in enumerate(issues):
+        issue = issue[1]
         
-        overlay = image.copy()
+        (text_width, text_height), _ = cv2.getTextSize(issue, font, font_scale, font_thickness)
         
-        for issue in enumerate(issues):
-            issue = issue[1]
-            
-            (text_width, text_height), _ = cv2.getTextSize(issue, font, font_scale, font_thickness)
-            
-            bg_top_left = (x - padding, y - text_height - padding)
-            bg_bottom_right = (x + text_width + padding, y + padding)
-            
-            cv2.rectangle(overlay, bg_top_left, bg_bottom_right, bg_color[:3], -1)
-            cv2.addWeighted(overlay, alpha, image, 1 - alpha, 0, image)
-            
-            shadow_offset = 2
-            cv2.putText(image, issue, (x + shadow_offset, y + shadow_offset), font, font_scale, shadow_color, font_thickness)            
-            cv2.putText(image, issue, (x, y), font, font_scale, text_color, font_thickness)
-            
-            y += text_height + line_spacing
+        bg_top_left = (x - padding, y - text_height - padding)
+        bg_bottom_right = (x + text_width + padding, y + padding)
+        
+        cv2.rectangle(overlay, bg_top_left, bg_bottom_right, bg_color[:3], -1)
+        cv2.addWeighted(overlay, alpha, image, 1 - alpha, 0, image)
+        
+        shadow_offset = 2
+        cv2.putText(image, issue, (x + shadow_offset, y + shadow_offset), font, font_scale, shadow_color, font_thickness)            
+        cv2.putText(image, issue, (x, y), font, font_scale, text_color, font_thickness)
+        
+        y += text_height + line_spacing
 
 

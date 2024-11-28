@@ -2,6 +2,10 @@ from PySide6.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout,QP
 from PySide6.QtCore import Qt
 
 from exercise import Squat, Pushup
+from video_processing import VideoProcessor
+
+import threading
+import sys
 
 class ExerciseWindow(QWidget):
     def __init__(self):
@@ -65,8 +69,10 @@ class ExerciseWindow(QWidget):
     def get_video_source(self):
         if self.use_camera_checkbox.isChecked():
             return 0
-        else:
+        elif self.file_input.text().strip():
             return self.file_input.text()
+        else:
+            return None
     
     
     def run_pushup(self):
@@ -80,19 +86,24 @@ class ExerciseWindow(QWidget):
     
     def run_squat(self):
         video_source = self.get_video_source()
-        if video_source:
-            squat = Squat(video_source)
-            squat.analyze_video()
-        elif video_source == 0:
-            squat = Squat(video_source)
-            squat.analyze_webcam()
+        if video_source is not None:
+            squat = Squat()
+            processor = VideoProcessor(video_source, squat.process_frame, resize_dim=(800, 600))
+            threading.Thread(target=self.run_processor, args=(processor,)).start()
         else:
-            print("No file selected.")
-             
+            self.set_status_message("Please select a valid video source.")
+        
+        
+    def run_processor(self, processor):
+        try:
+            processor.start()
+        except Exception as e:
+            print(f"Error during processing: {e}")
+
 
 if __name__ == "__main__":
     app = QApplication([])
     window = ExerciseWindow()
     window.show()
-    app.exec()
+    sys.exit(app.exec())
 
