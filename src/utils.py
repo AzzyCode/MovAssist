@@ -53,6 +53,30 @@ def rescale_frame(frame, scale=None, target_dim=None):
         print(f"Error in rescale_frame: {str(e)}")
         return None
     
+    
+def preprocess_frame(frame, target_height=480, target_width=640):
+    """Preprocess video frame by resizing and cropping"""
+    height, width = frame.shape[:2]
+    aspect_ratio = width / height
+    target_aspect = target_width / target_height
+    
+    if aspect_ratio > target_aspect:
+        # Image is wider than target
+        new_width = int(target_height * aspect_ratio)
+        new_height = target_height
+        frame = cv2.resize(frame, (new_width, new_height))
+        
+        # Crop width to target
+        start_x = (new_width - target_width) // 2
+        frame = frame[:, start_x:start_x+target_width]
+
+    else:
+        # Image is taller that target
+        new_height = int(target_width / aspect_ratio)
+        new_width = target_width
+        frame = cv2.resize(frame, (new_width, new_height))
+        
+    return frame
              
 def display_counter(frame, rep_counter, exercise) -> None:
     """Display exercise counter on frame"""
@@ -72,40 +96,66 @@ def display_counter(frame, rep_counter, exercise) -> None:
     
 
 def display_feedback(image, issues):
-    """Display feedback messages on frame"""
+    """Display feedback messages in a box in the top left corner of the frame"""
     if not issues:
         return
     
+    # Configuration
     font = cv2.FONT_HERSHEY_SIMPLEX
     font_scale = 0.6
-    font_thickness = 2
-    text_color = (255, 255, 255)
-    shadow_color = (50, 50, 50)   
-    bg_color = (0, 0, 255, 150)
-    alpha = 0.8         
-    line_spacing = 15
+    font_thickness = 1
+    text_color = (255, 255, 255)  # White text
+    box_color = (0, 0, 0)  # Black box
+    box_alpha = 0.7  # Box transparency
+    line_spacing = 25
     padding = 10
-                    
-    x = 20                          
-    y = 40                         
     
-    overlay = image.copy()
+    # Fixed position in top left corner
+    start_x = 20
+    start_y = 20
     
-    for issue in enumerate(issues):
-        issue = issue[1]
-        
+    # Calculate box dimensions
+    max_text_width = 0
+    total_height = padding * 2  # Initial padding
+    
+    # Get dimensions for all error messages
+    text_dimensions = []
+    for issue in issues:
         (text_width, text_height), _ = cv2.getTextSize(issue, font, font_scale, font_thickness)
-        
-        bg_top_left = (x - padding, y - text_height - padding)
-        bg_bottom_right = (x + text_width + padding, y + padding)
-        
-        cv2.rectangle(overlay, bg_top_left, bg_bottom_right, bg_color[:3], -1)
-        cv2.addWeighted(overlay, alpha, image, 1 - alpha, 0, image)
-        
-        shadow_offset = 2
-        cv2.putText(image, issue, (x + shadow_offset, y + shadow_offset), font, font_scale, shadow_color, font_thickness)            
-        cv2.putText(image, issue, (x, y), font, font_scale, text_color, font_thickness)
-        
-        y += text_height + line_spacing
+        max_text_width = max(max_text_width, text_width)
+        text_dimensions.append((text_width, text_height))
+        total_height += text_height + line_spacing
+    
+    # Create box coordinates
+    box_width = max_text_width + (padding * 2)
+    box_height = total_height - line_spacing  # Remove extra line spacing from last item
+    
+    # Create semi-transparent overlay
+    overlay = image.copy()
+    cv2.rectangle(
+        overlay,
+        (start_x, start_y),
+        (start_x + box_width, start_y + box_height),
+        box_color,
+        -1
+    )
+    
+    # Apply transparency
+    cv2.addWeighted(overlay, box_alpha, image, 1 - box_alpha, 0, image)
+    
+    # Add error messages
+    current_y = start_y + padding + text_dimensions[0][1]  # Start after top padding
+    for i, issue in enumerate(issues):
+        cv2.putText(
+            image,
+            issue,
+            (start_x + padding, current_y),
+            font,
+            font_scale,
+            text_color,
+            font_thickness,
+            cv2.LINE_AA
+        )
+        current_y += text_dimensions[i][1] + line_spacing
 
 
