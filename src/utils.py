@@ -157,5 +157,35 @@ def display_feedback(image, issues):
             cv2.LINE_AA
         )
         current_y += text_dimensions[i][1] + line_spacing
+        
+        
+def display_status(image, message: str, is_valid: bool = False):
+    """Display status message on the image with a background box"""
+    # Get image dimensions
+    height, width = image.shape[:2]
+    
+    # Message settings
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    font_scale = 1
+    thickness = 2
+    color = (0, 255, 0) if is_valid else (0, 0, 255)
+    
+    # Get text size
+    (text_width, text_height), baseline = cv2.getTextSize(message, font, font_scale, thickness)
+    
+    # Calculate position for centered text
+    x = (width - text_width) // 2
+    y = 50  # Distance from top
+    
+    # Draw background rectangle
+    padding = 10
+    cv2.rectangle(image, 
+                 (x - padding, y - text_height - padding),
+                 (x + text_width + padding, y + padding),
+                 (0, 0, 0), -1)  # Filled rectangle
 
+    cv2.putText(image, message, (x, y), font, font_scale, color, thickness, cv2.LINE_AA)
+    
+    
+    
 
