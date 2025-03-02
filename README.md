@@ -9,7 +9,8 @@ MovAssist is a real-time exercise form analysis system that uses computer vision
 - Features GUI with video replay and configuration options.
 - Includes an AI trainer chat offering fitness advice in a separate window.
 
-### Demos
+## Demos
+
 ### Squat
 | Correct Form | Incorrect Form |
 |--------------|----------------|
