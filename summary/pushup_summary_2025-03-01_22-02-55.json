@@ -1,0 +1,23 @@
+{
+    "session_info": {
+        "date": "2025-03-01 22:02:55",
+        "duration": "00:00:07"
+    },
+    "reps": {
+        "completed reps": 2,
+        "correct reps": 0,
+        "incorrect reps": 2
+    },
+    "angles": {
+        "elbow_angles": {
+            "average": 46.51490764184142,
+            "min": 45.77545530787573,
+            "max": 47.2543599758071
+        },
+        "hip_angles": {
+            "average": 177.42274969914985,
+            "min": 176.36177314267607,
+            "max": 178.4837262556236
+        }
+    }
+}
