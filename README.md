@@ -13,6 +13,8 @@ MovAssist is a real-time exercise form analysis system that uses computer vision
 ![Alt text](https://github.com/AzzyCode/MovAssist/blob/main/assets/squat_correct.mp40)
 ![Alt text](https://github.com/AzzyCode/MovAssist/blob/main/assets/squat_incorect.mp4)
 
+## Pushup
+![Pushup](https://github.com/AzzyCode/MovAssist/blob/main/assets/pushup.gif)
 ## Installation
 1. Clone the repository: git clone https://github.com/your-username/movassist.git
 2. Install dependencies: pip install -r requirements.txt
