@@ -1,0 +1,40 @@
+{
+    "squat": {
+        "STATE_THRESH": {
+            "up": 150,
+            "mid": 120,
+            "depth": 90
+        },
+        "ANGLE_THRESHOLDS": {
+            "depth": 90,
+            "min_depth": 40,
+            "hip_min": 60,
+            "hip_max": 90,
+            "ankle_min": 80
+        },
+        "FEEDBACK_MESSAGES": {
+            "depth": "Squat not deep enough",
+            "min_depth": "Squat too deep",
+            "hip_min": "Maintain more upright position",
+            "hip_max": "Bend forward slightly more",
+            "ankle_min": "Knees going too far forward"
+        }
+    },
+    "pushup": {
+        "STATE_THRESH": {
+            "up": 150,
+            "mid": 95
+        },
+        "ANGLE_THRESHOLDS": {
+            "hip_low": 190,
+            "hip_high": 160,
+            "elbow_min": 5
+        },
+        "FEEDBACK_MESSAGES": {
+            "hip_low": "Hip too low",
+            "hip_high": "Hip too high",
+            "elbow_min": "Too deep 123",
+            "depth": "Not deep enough"
+        }
+    }
+}
