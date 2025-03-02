@@ -9,6 +9,12 @@ MovAssist is a real-time exercise form analysis system that uses computer vision
 - Features GUI with video replay and configuration options.
 - Includes an AI trainer chat offering fitness advice in a separate window.
 
+- **Pose Tracking**: Tracks squats and push-ups via webcam or video using MediaPipe’s real-time pose estimation.
+- **Form Feedback**: Delivers instant feedback on exercise form (e.g., "Knees too forward") with customizable angle thresholds.
+- **Rep Counting**: Monitors repetition counts and distinguishes correct vs. incorrect reps.
+- **Interactive GUI**: Featuring video replay, a detailed configuration editor, and exercise summaries.
+- **AI Trainer Chat**: Offers real-time AI fitness chat in a separate window.
+
 ## Demos
 
 ### Squat
@@ -17,7 +23,7 @@ MovAssist is a real-time exercise form analysis system that uses computer vision
 | ![Squat Correct](https://github.com/AzzyCode/MovAssist/blob/main/assets/squat_correct.gif?raw=true) | ![Squat Incorrect](https://github.com/AzzyCode/MovAssist/blob/main/assets/squat_incorrect.gif?raw=true) |
 
 ### Push-up
-![Push-up Demo](https://github.com/AzzyCode/MovAssist/blob/main/assets/pushup.gif?raw=true)
+| ![Push-up Demo](https://github.com/AzzyCode/MovAssist/blob/main/assets/pushup.gif?raw=true) |
 
 
 ## Installation
@@ -49,12 +55,3 @@ Contributions are welcome! Potential areas:
 
 ## License
 MovAssist is licensed under the MIT License. See LICENSE for details.
-
-## Acknowledgments
-Built with amazing open-source tools:
-
-- MediaPipe for pose estimation.
-- OpenCV for video handling.
-- TensorFlow for ML exploration.
-
-Special thanks to the open-source community!
